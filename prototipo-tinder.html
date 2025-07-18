@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tinder - Prototipo con Filtro de IA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+
+        /* Pantalla principal de swipe */
+        #swipe-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        .app-header {
+            background-color: #fff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .app-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FE3C72;
+            display: flex;
+            align-items: center;
+        }
+
+        .app-logo i {
+            margin-right: 8px;
+            color: #fe3c72;
+        }
+
+        .header-icons i {
+            margin-left: 20px;
+            font-size: 20px;
+            color: #555;
+        }
+
+        .cards-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        .profile-card {
+            position: absolute;
+            width: 90%;
+            max-width: 400px;
+            height: 75vh;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s;
+            cursor: grab;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-image {
+            height: 70%;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .profile-info {
+            padding: 20px;
+            background: white;
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .profile-age {
+            font-size: 22px;
+            color: #666;
+        }
+
+        .profile-bio {
+            margin-top: 10px;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .action-buttons {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            background: white;
+        }
+
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+        }
+
+        .dislike-btn {
+            background: white;
+            color: #fd5068;
+            border: 2px solid #fd5068;
+        }
+
+        .like-btn {
+            background: linear-gradient(to right, #fd5068, #fe3c72);
+            color: white;
+        }
+
+        .dislike-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(253, 80, 104, 0.3);
+        }
+
+        .like-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(254, 60, 114, 0.4);
+        }
+
+        /* Pantalla de chat */
+        #chat-screen {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f0f2f5;
+        }
+
+        .chat-header {
+            background-color: #fff;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-button {
+            font-size: 22px;
+            margin-right: 15px;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .chat-partner-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-partner-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 12px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .chat-partner-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            border-radius: 18px;
+            position: relative;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .received {
+            background-color: #fff;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .sent {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .hidden-message-container {
+            background-color: #fff8e1;
+            border: 1px solid #ffecb3;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            align-self: flex-start;
+            max-width: 75%;
+        }
+
+        .hidden-message-warning {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #ff6f00;
+        }
+
+        .hidden-message-warning i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        .show-message-btn {
+            background: #fe3c72;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-block;
+        }
+
+        .show-message-btn:hover {
+            background: #fd2a63;
+        }
+
+        .original-message {
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            align-self: flex-start;
+            max-width: 75%;
+            color: #c62828;
+        }
+
+        .ai-filter-control {
+            background-color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #eee;
+        }
+
+        .filter-label {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .filter-label i {
+            margin-right: 10px;
+            color: #fe3c72;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #fe3c72;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            top: -40px;
+            right: 0;
+            display: none;
+            z-index: 100;
+        }
+
+        .tooltip:after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            right: 10px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+
+        /* Mensaje de match */
+        .match-notification {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .match-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 80%;
+            transform: scale(0.8);
+            transition: transform 0.5s;
+        }
+
+        .match-title {
+            font-size: 32px;
+            color: #fe3c72;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .match-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            background-size: cover;
+            background-position: center;
+            border: 5px solid #fe3c72;
+        }
+
+        .match-name {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .match-button {
+            background: #fe3c72;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .match-notification.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .match-notification.show .match-content {
+            transform: scale(1);
+        }
+
+        /* Animaciones */
+        .swipe-right {
+            transform: translateX(1000px) rotate(30deg);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+        }
+
+        .swipe-left {
+            transform: translateX(-1000px) rotate(-30deg);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+        }
+
+        /* Indicador de mensajes ocultos */
+        .hidden-message-indicator {
+            text-align: center;
+            margin: 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Nuevo estilo para mensajes protegidos */
+        .ai-protection-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #fe3c721a;
+            color: #fe3c72;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .ai-protection-badge i {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Pantalla de Swipe -->
+    <div id="swipe-screen">
+        <div class="app-header">
+            <div class="app-logo">
+                <i class="fas fa-heart"></i>
+                Tinder
+            </div>
+            <div class="header-icons">
+            </div>
+        </div>
+
+        <div class="cards-container">
+            <!-- Las tarjetas se generarán dinámicamente -->
+        </div>
+
+        <div class="action-buttons">
+            <div class="action-btn dislike-btn" id="dislike-btn" title="Descartar perfil">
+                <i class="fas fa-times"></i>
+            </div>
+            <div class="action-btn like-btn" id="like-btn" title="Dar like">
+                <i class="fas fa-heart"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Chat -->
+    <div id="chat-screen">
+        <div class="chat-header">
+            <div class="back-button" id="back-button" title="Volver a explorar">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <div class="chat-partner-info">
+                <div class="chat-partner-image" id="chat-partner-image"></div>
+                <div class="chat-partner-name" id="chat-partner-name"></div>
+                <div class="ai-protection-badge" id="ai-protection-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    Protección IA activada
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            <!-- Los mensajes se generarán dinámicamente -->
+        </div>
+
+        <div class="ai-filter-control">
+            <div class="filter-label">
+                <i class="fas fa-shield-alt"></i>
+                <span>Activar filtro de IA para este chat</span>
+            </div>
+            <div class="toggle-container">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="ai-filter-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+                <div class="tooltip">Pronto podrás seleccionar qué chats tienen el filtro</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificación de Match -->
+    <div class="match-notification" id="match-notification">
+        <div class="match-content">
+            <div class="match-title">¡Es un Match!</div>
+            <div class="match-image" id="match-image"></div>
+            <div class="match-name" id="match-name"></div>
+            <p>Ahora pueden comenzar a chatear</p>
+            <button class="match-button" id="go-to-chat">Enviar un mensaje</button>
+        </div>
+    </div>
+
+    <script>
+        // Datos de perfiles
+        const profiles = [
+            {
+                id: 1,
+                name: "Alejandra",
+                age: 26,
+                image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=400",
+                bio: "Amante de los viajes y la fotografía. Busco alguien para explorar el mundo juntos."
+            },
+            {
+                id: 2,
+                name: "Carlos",
+                age: 29,
+                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=400",
+                bio: "Ingeniero de software. Me gusta el senderismo y la buena comida."
+            },
+            {
+                id: 3,
+                name: "Martina",
+                age: 24,
+                image: "https://images.unsplash.com/photo-1516726817505-f5ed825624d8?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=400",
+                bio: "Estudiante de medicina. Me encanta bailar salsa y leer novelas."
+            },
+            {
+                id: 4,
+                name: "Javier",
+                age: 31,
+                image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=400",
+                bio: "Chef profesional. Busco alguien que comparta mi pasión por la gastronomía."
+            },
+            {
+                id: 5,
+                name: "Lucía",
+                age: 27,
+                image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=400",
+                bio: "Diseñadora gráfica. Amante del arte, la música indie y los gatos."
+            },
+            {
+                id: 6,
+                name: "Andrés",
+                age: 32,
+                image: "https://images.unsplash.com/photo-1504593811423-6dd665756598?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=400",
+                bio: "Arquitecto. Me apasiona el diseño sostenible y los deportes al aire libre."
+            }
+        ];
+
+        // Mensajes
+        const offensiveMessages = [
+            "Wow, con ese cuerpo no te van a durar ni 5 minutos en esta app 😏",
+            "¿Qué tal si nos saltamos las charlas y vamos directo al grano? 🍑",
+            "No te hagas, sabes que estás aquí por lo mismo que todos 😉",
+            "Parece que te comiste todo el swipe... literal.",
+            "Con esa cara, yo sí te haría de todo 🤤",
+            "Me gusta lo que veo, pero… ¿puedes manejar lo que tengo?"
+        ];
+
+
+        const nonOffensiveMessages = [
+            "¡Hola! Me encantó tu foto de la playa. 😉",
+            "Parece que tenemos pasión por los viajes en común. ¿Cómo va tu día?",
+            "¡Hey! ¿Qué te trajo por aquí?",
+            "Tu biografía me hizo sonreír. ¿Cuál es tu plan para el fin de semana?",
+            "Hola, me pareces muy interesante. ¿De qué parte del mundo eres?",
+            "Me encanta tu sonrisa en la tercera foto. ¿Te gusta salir a bailar?",
+            "Vi que te gusta la pizza, ¿cuál es tu topping favorito?",
+            "¡Guau! Esa foto en las montañas es increíble. ¿Dónde fue tomada?",
+            "Me encantaría saber más sobre tu trabajo. ¿Qué es lo que más disfrutas de tu profesión?",
+            "¿Qué libro estás leyendo actualmente? Siempre busco nuevas recomendaciones."
+        ];
+
+        // Estado de la aplicación
+        let currentProfileIndex = 0;
+        let matchCount = 0;
+        let currentMatch = null;
+
+        // Elementos DOM
+        const swipeScreen = document.getElementById('swipe-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const cardsContainer = document.querySelector('.cards-container');
+        const dislikeBtn = document.getElementById('dislike-btn');
+        const likeBtn = document.getElementById('like-btn');
+        const backButton = document.getElementById('back-button');
+        const chatMessages = document.getElementById('chat-messages');
+        const matchNotification = document.getElementById('match-notification');
+        const goToChatBtn = document.getElementById('go-to-chat');
+        const aiFilterToggle = document.getElementById('ai-filter-toggle');
+        const tooltip = document.querySelector('.tooltip');
+        const aiProtectionBadge = document.getElementById('ai-protection-badge');
+
+        // Inicializar la aplicación
+        function initApp() {
+            renderProfiles();
+            setupEventListeners();
+        }
+
+        // Renderizar perfiles
+        function renderProfiles() {
+            cardsContainer.innerHTML = '';
+
+            // Mostrar los próximos 3 perfiles
+            for (let i = 0; i < Math.min(3, profiles.length - currentProfileIndex); i++) {
+                const profile = profiles[currentProfileIndex + i];
+                const card = createProfileCard(profile, i);
+                cardsContainer.appendChild(card);
+                setupSwipeEvents(card);
+            }
+        }
+
+        // Crear tarjeta de perfil
+        function createProfileCard(profile, index) {
+            const card = document.createElement('div');
+            card.className = 'profile-card';
+            card.style.zIndex = 100 - index;
+            card.style.transform = `scale(${1 - index * 0.05}) translateY(${index * 10}px)`;
+            card.dataset.id = profile.id;
+
+            card.innerHTML = `
+                <div class="profile-image" style="background-image: url('${profile.image}')"></div>
+                <div class="profile-info">
+                    <div class="profile-name">${profile.name}, <span class="profile-age">${profile.age}</span></div>
+                    <div class="profile-bio">${profile.bio}</div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Configurar eventos de swipe
+        function setupSwipeEvents(card) {
+            let startX, startY, moveX, moveY;
+            let isDragging = false;
+
+            card.addEventListener('mousedown', startDrag);
+            card.addEventListener('touchstart', startDrag, { passive: false });
+
+            function startDrag(e) {
+                isDragging = true;
+                startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('touchmove', drag, { passive: false });
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+
+                e.preventDefault();
+
+                const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+                moveX = clientX - startX;
+                moveY = clientY - startY;
+
+                const rotate = moveX * 0.1;
+
+                card.style.transform = `translate(${moveX}px, ${moveY}px) rotate(${rotate}deg)`;
+            }
+
+            function endDrag() {
+                if (!isDragging) return;
+
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('touchmove', drag);
+                document.removeEventListener('mouseup', endDrag);
+                document.removeEventListener('touchend', endDrag);
+
+                isDragging = false;
+
+                // Determinar si fue un swipe significativo
+                if (Math.abs(moveX) > 100) {
+                    if (moveX > 0) {
+                        // Swipe right (like)
+                        card.classList.add('swipe-right');
+                        handleLike(parseInt(card.dataset.id));
+                    } else {
+                        // Swipe left (dislike)
+                        card.classList.add('swipe-left');
+                        nextProfile();
+                    }
+                } else {
+                    // Reset position
+                    card.style.transform = '';
+                }
+            }
+        }
+
+        // Cambiar al siguiente perfil
+        function nextProfile() {
+            currentProfileIndex++;
+            if (currentProfileIndex >= profiles.length) {
+                // Reiniciar si llegamos al final
+                currentProfileIndex = 0;
+            }
+            renderProfiles();
+        }
+
+        // Manejar like
+        function handleLike(profileId) {
+            const profile = profiles.find(p => p.id === profileId);
+
+            // Mostrar notificación de match
+            document.getElementById('match-image').style.backgroundImage = `url('${profile.image}')`;
+            document.getElementById('match-name').textContent = `${profile.name}, ${profile.age}`;
+
+            setTimeout(() => {
+                matchNotification.classList.add('show');
+            }, 500);
+
+            // Guardar el match actual
+            currentMatch = {
+                profile: profile,
+                isFirstMatch: matchCount === 0
+            };
+
+            matchCount++;
+        }
+
+        // Ir a la pantalla de chat
+        function goToChatScreen() {
+            matchNotification.classList.remove('show');
+            swipeScreen.style.display = 'none';
+            chatScreen.style.display = 'flex';
+
+            // Actualizar información del chat
+            document.getElementById('chat-partner-image').style.backgroundImage = `url('${currentMatch.profile.image}')`;
+            document.getElementById('chat-partner-name').textContent = currentMatch.profile.name;
+
+            // Limpiar mensajes anteriores
+            chatMessages.innerHTML = '';
+
+            // Determinar el mensaje a mostrar
+            let message;
+            let isOffensive;
+            if (currentMatch.isFirstMatch) {
+                // Primer match: mensaje ofensivo
+                isOffensive = true;
+                message = getRandomMessage(true);
+            } else {
+                // Matchs subsiguientes: aleatorio (50% de probabilidad)
+                isOffensive = Math.random() > 0.5;
+                message = getRandomMessage(isOffensive);
+            }
+
+            // Renderizar el mensaje - SIEMPRE OCULTAMOS LOS MENSAJES OFENSIVOS
+            if (isOffensive) {
+                renderHiddenMessage(message);
+                aiProtectionBadge.style.display = 'inline-flex';
+            } else {
+                renderNormalMessage(message);
+                aiProtectionBadge.style.display = 'none';
+            }
+
+            // Agregar indicador de protección IA
+            if (isOffensive) {
+                const indicator = document.createElement('div');
+                indicator.className = 'hidden-message-indicator';
+                indicator.innerHTML = '<i class="fas fa-shield-alt"></i> La IA ha protegido tu chat ocultando mensajes inapropiados';
+                chatMessages.appendChild(indicator);
+            }
+        }
+
+        // Obtener mensaje aleatorio
+        function getRandomMessage(isOffensive) {
+            const messages = isOffensive ? offensiveMessages : nonOffensiveMessages;
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        // Renderizar mensaje NORMAL en el chat
+        function renderNormalMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message received';
+            messageElement.textContent = message;
+            chatMessages.appendChild(messageElement);
+        }
+
+        // Renderizar mensaje OCULTO en el chat
+        function renderHiddenMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'hidden-message-container';
+            messageElement.innerHTML = `
+                <div class="hidden-message-warning">
+                    <i class="fas fa-shield-alt"></i>
+                    <strong>Este mensaje fue ocultado por la IA por contener lenguaje inapropiado</strong>
+                </div>
+                <button class="show-message-btn">Ver mensaje</button>
+            `;
+
+            messageElement.querySelector('.show-message-btn').addEventListener('click', function () {
+                // Reemplazar por el mensaje original
+                const originalMessage = document.createElement('div');
+                originalMessage.className = 'original-message';
+                originalMessage.textContent = message;
+                chatMessages.replaceChild(originalMessage, messageElement);
+
+                // Actualizar el badge
+                aiProtectionBadge.innerHTML = '<i class="fas fa-eye"></i> Mensaje revelado por usuario';
+                aiProtectionBadge.style.background = '#ffebee';
+                aiProtectionBadge.style.color = '#c62828';
+            });
+
+            chatMessages.appendChild(messageElement);
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Botones de like/dislike
+            dislikeBtn.addEventListener('click', () => {
+                const topCard = document.querySelector('.profile-card');
+                if (topCard) {
+                    topCard.classList.add('swipe-left');
+                    setTimeout(nextProfile, 300);
+                }
+            });
+
+            likeBtn.addEventListener('click', () => {
+                const topCard = document.querySelector('.profile-card');
+                if (topCard) {
+                    topCard.classList.add('swipe-right');
+                    handleLike(parseInt(topCard.dataset.id));
+                }
+            });
+
+            // Navegación
+            backButton.addEventListener('click', () => {
+                chatScreen.style.display = 'none';
+                swipeScreen.style.display = 'flex';
+                aiProtectionBadge.innerHTML = '<i class="fas fa-shield-alt"></i> Protección IA activada';
+                aiProtectionBadge.style.background = '#fe3c721a';
+                aiProtectionBadge.style.color = '#fe3c72';
+            });
+
+            goToChatBtn.addEventListener('click', goToChatScreen);
+
+            // Toggle de filtro IA
+            aiFilterToggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                tooltip.style.display = 'block';
+                setTimeout(() => {
+                    tooltip.style.display = 'none';
+                }, 2000);
+            });
+        }
+
+        // Iniciar la aplicación cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+
+</html>
